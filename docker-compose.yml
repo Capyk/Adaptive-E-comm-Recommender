@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:15-alpine # Use a lightweight, stable version of Postgres
+    restart: always
+    environment:
+      POSTGRES_USER: aers_user # Must be the same user for Python connection
+      POSTGRES_PASSWORD: aers_password
+      POSTGRES_DB: aers_db     # The database name
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # CRITICAL: Persists your data
+    ports:
+      - "5432:5432" # Expose port for local management (optional)
+    healthcheck: # Healthcheck to ensure DB is ready before API starts
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment: # DODANIE TEGO BLOKU JEST KLUCZOWE
+      POSTGRES_USER: aers_user
+      POSTGRES_PASSWORD: aers_password
+      POSTGRES_DB: aers_db
+      POSTGRES_HOST: db # Ważne: 'db' to nazwa serwisu!
+    volumes: # <--- DODAJ TEN BLOK
+      - .:/app # Montuje cały katalog projektu do /app w kontenerze
+    depends_on: # Czekanie na zdrowy stan DB przed próbą startu API
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
