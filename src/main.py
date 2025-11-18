@@ -16,7 +16,7 @@ print(f"Attempting to connect to DB at: {DB_HOST}")
 @app.get("/")
 def read_root():
     """
-    Prosty endpoint testowy dla weryfikacji, czy API jest aktywne.
+    Simple test endpoint to see if API is active.
     """
     return {"message": "AERS API Running"}
 

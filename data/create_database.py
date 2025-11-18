@@ -2,6 +2,7 @@ import os
 import time
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
+from src.database.models import Base
 
 # --- 1. Load Environment Variables ---
 # These variables must match those defined in docker-compose.yml
@@ -13,49 +14,15 @@ DB_HOST = os.getenv("POSTGRES_HOST", "db")  # IMPORTANT: 'db' is the service nam
 # Define the connection URL for SQLAlchemy
 DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 
-# --- 2. SQL Table Creation Commands ---
-# Defining the schema required for the AERS project
-
-USERS_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY,
-    join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-"""
-
-ITEMS_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS items (
-    item_id INTEGER PRIMARY KEY,
-    category VARCHAR(50),
-    price NUMERIC
-);
-"""
-
-INTERACTIONS_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS interactions (
-    interaction_id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(user_id),
-    item_id INTEGER NOT NULL REFERENCES items(item_id),
-    rating NUMERIC NOT NULL,
-    "timestamp" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-"""
-
-
 def create_tables(engine):
-    """Executes the SQL commands to create the tables."""
-    with engine.connect() as connection:
-        print("-> Creating users table...")
-        connection.execute(text(USERS_TABLE_SQL))
+    """Creates tables using SQLAlchemy ORM metadata."""
+    print("-> Attempting to create all tables via SQLAlchemy ORM...")
 
-        print("-> Creating items table...")
-        connection.execute(text(ITEMS_TABLE_SQL))
+    # This command inspects all classes derived from Base (User, Item, Interaction)
+    # and generates the necessary CREATE TABLE IF NOT EXISTS commands.
+    Base.metadata.create_all(engine)
 
-        print("-> Creating interactions table...")
-        connection.execute(text(INTERACTIONS_TABLE_SQL))
-
-        connection.commit()
-    print("✅ All tables created successfully.")
+    print("All tables created successfully (via ORM).")
 
 
 def connect_with_retry(url, retries=5, delay=5):
